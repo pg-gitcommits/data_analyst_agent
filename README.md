@@ -2,7 +2,7 @@
 
 An autonomous AI agent that analyzes CSV files by writing and executing Python code in a loop — powered by Claude's tool use API.
 
-Upload a CSV, ask a question in plain English, and watch the agent plan, write code, run it, interpret results, and answer you — all without any hand-holding.
+Upload a CSV, ask a question in plain English, and watch the agent plan, write code, run it, interpret results, and answer you — all without any hand-holding. Ask follow-up questions and the agent remembers the full conversation context.
 
 ---
 
@@ -11,18 +11,19 @@ Upload a CSV, ask a question in plain English, and watch the agent plan, write c
 > "What are the top 10 products by revenue? Show a bar chart."
 
 The agent will:
-1. Explore the dataset (shape, columns, dtypes)
-2. Write pandas code to compute the answer
-3. Execute it locally via subprocess
-4. Generate a matplotlib chart
-5. Summarize findings in plain English
+1. Write pandas code to compute the answer
+2. Execute it locally via subprocess
+3. Generate a matplotlib chart
+4. Summarize findings in plain English
+
+Then you can follow up: "Which of those products has the highest profit margin?" — and it remembers the context.
 
 ---
 
 ## Architecture
 
 ```
-User question
+User question + message history
      │
      ▼
 ┌─────────────────────────────────────┐
@@ -38,6 +39,10 @@ User question
 │    ├─ executes code via subprocess  │
 │    └─ returns stdout + chart paths  │
 │                                     │
+│  Message history                    │
+│    ├─ full conversation maintained  │
+│    └─ enables multi-turn follow-ups │
+│                                     │
 │  Loop continues until end_turn      │
 └─────────────────────────────────────┘
      │
@@ -47,9 +52,10 @@ Streamlit UI (streaming step-by-step)
 
 Key agentic properties:
 - **Multi-step reasoning**: the agent runs multiple tool calls per question
+- **Multi-turn conversation**: full message history passed on every question so the agent remembers context
 - **Self-directed**: it decides what to explore without being told
 - **Error-aware**: stderr is returned to the model so it can self-correct
-- **Stateful**: full message history is maintained across turns
+- **Transparent**: collapsible code and output panels show the agent's thinking
 
 ---
 
@@ -60,6 +66,8 @@ Key agentic properties:
 ```bash
 git clone https://github.com/YOUR_USERNAME/data-analyst-agent
 cd data-analyst-agent
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -69,9 +77,10 @@ pip install -r requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Or create a `.env` file:
-```
-ANTHROPIC_API_KEY=sk-ant-...
+Or add it permanently to your shell:
+```bash
+echo 'export ANTHROPIC_API_KEY=sk-ant-...' >> ~/.zshrc
+source ~/.zshrc
 ```
 
 ### 3. Run
@@ -88,20 +97,23 @@ Open http://localhost:8501
 
 ```
 data-analyst-agent/
-├── agent.py          # Agentic loop + tool execution
-├── app.py            # Streamlit UI
+├── agent.py          # Agentic loop + tool execution + message history
+├── app.py            # Streamlit UI with session state
 ├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
 ### `agent.py`
-- `run_agent(csv_path, question, chart_dir)` — generator that yields events
+- `run_agent(csv_path, question, chart_dir, message_history)` — generator that yields events, maintains conversation history across turns
 - `execute_python(code, csv_path, chart_dir)` — runs code in subprocess, captures stdout + charts
 - `TOOLS` — Claude tool definition for `run_python`
 
 ### `app.py`
-- Streamlit UI with file upload, question input, step-by-step rendering
+- Streamlit UI with file upload, question input, quick prompts
 - Streams agent events live as they arrive
+- Collapsible code and output panels
+- Persistent multi-turn conversation via session state
 
 ---
 
@@ -114,16 +126,17 @@ data-analyst-agent/
 - "Is there a correlation between [col_a] and [col_b]?"
 - "Group by [category_col] and show average [numeric_col]"
 
+Then follow up with: "Tell me more about that" or "Now show it as a pie chart"
+
 ---
 
 ## Extending this project
 
 Ideas to take it further:
-- **Multi-turn conversation**: pass history between questions so the agent remembers context
 - **E2B sandbox**: replace subprocess with [E2B](https://e2b.dev) for secure cloud execution
 - **More tools**: add `save_csv`, `run_sql`, `fetch_url` tools
 - **Export**: let users download the generated code as a `.py` file
-- **Memory**: summarize past analyses and inject as context
+- **Memory summarization**: compress old conversation history to save tokens
 
 ---
 
@@ -146,6 +159,7 @@ Ideas to take it further:
 | Python | End-to-end project — agent logic, file I/O, subprocess, Streamlit UI |
 | Anthropic Claude API | Tool use, multi-step agentic loop, message history management |
 | Agentic AI | Agent that plans, writes code, executes, interprets, and loops autonomously |
+| Multi-turn conversation | Full message history maintained across questions via session state |
 | Tool use / function calling | Custom `run_python` tool definition and execution cycle |
 | Data analysis | pandas, matplotlib, seaborn for CSV exploration and visualization |
 | Streamlit | Interactive web UI with live streaming, file upload, session state |
