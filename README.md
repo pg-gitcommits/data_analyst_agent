@@ -8,15 +8,24 @@ Upload a CSV, ask a question in plain English, and watch the agent plan, write c
 
 ## Demo
 
-> "What are the top 10 products by revenue? Show a bar chart."
+### 1. Upload a CSV and use quick prompts
+Upload any CSV file and get instant insights using the built-in quick prompt buttons.
 
-The agent will:
-1. Write pandas code to compute the answer
-2. Execute it locally via subprocess
-3. Generate a matplotlib chart
-4. Summarize findings in plain English
+![Upload and quick prompts](assets/video1.gif)
 
-Then you can follow up: "Which of those products has the highest profit margin?" — and it remembers the context.
+---
+
+### 2. Ask your own question
+Type any custom question in plain English and watch the agent write and execute Python code to answer it.
+
+![Custom question](assets/video2.gif)
+
+---
+
+### 3. Follow-up with context
+Ask a follow-up question — the agent remembers the full conversation and builds on its previous answer.
+
+![Follow-up conversation](assets/video3.gif)
 
 ---
 
